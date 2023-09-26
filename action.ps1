@@ -2,9 +2,9 @@
 ##################################################################
 # Form mapping
 $formObject = @{
-    userId            = $form.userId
+    UserIdentity      = $form.UserIdentity
     userPrincipalName = $form.userPrincipalName
-    managerId         = $form.managerId
+    ManagerIdentity   = $form.ManagerIdentity
 }
 
 try {
@@ -15,7 +15,7 @@ try {
         ContentType = 'application/x-www-form-urlencoded'
         Method      = 'POST'
         Verbose     = $false
-        Body = @{
+        Body        = @{
             grant_type    = 'client_credentials'
             client_id     = $AADAppID
             client_secret = $AADAppSecret
@@ -25,10 +25,10 @@ try {
     $accessToken = (Invoke-RestMethod @splatTokenParams).access_token
 
     $splatUpdateManagerParams = @{
-        Uri     = "https://graph.microsoft.com/v1.0/users/$($formObject.userId)/manager/`$ref"
+        Uri     = "https://graph.microsoft.com/v1.0/users/$($formObject.UserIdentity)/manager/`$ref"
         Method  = 'PUT'
         Body    = @{
-            '@odata.id' = "https://graph.microsoft.com/v1.0/users/$($formObject.ManagerId)"
+            '@odata.id' = "https://graph.microsoft.com/v1.0/users/$($formObject.ManagerIdentity)"
         } | ConvertTo-Json
         Verbose = $false
         Headers = @{
@@ -41,7 +41,7 @@ try {
     $auditLog = @{
         Action            = 'UpdateAccount'
         System            = 'AzureActiveDirectory'
-        TargetIdentifier  = $formObject.userId
+        TargetIdentifier  = $formObject.UserIdentity
         TargetDisplayName = $formObject.userPrincipalName
         Message           = "AzureActiveDirectory action: [AccountUpdateManager] for: [$($formObject.userPrincipalName)] executed successfully"
         IsError           = $false
@@ -53,15 +53,15 @@ try {
     $auditLog = @{
         Action            = 'UpdateAccount'
         System            = 'AzureActiveDirectory'
-        TargetIdentifier  = $formObject.userId
+        TargetIdentifier  = $formObject.UserIdentity
         TargetDisplayName = $formObject.userPrincipalName
         Message           = "Could not execute AzureActiveDirectory action: [AccountUpdateManager] for: [$($formObject.userPrincipalName)], error: $($ex.Exception.Message)"
         IsError           = $true
     }
-    if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException')){
+    if ($($ex.Exception.GetType().FullName -eq 'Microsoft.PowerShell.Commands.HttpResponseException')) {
         $auditLog.Message = "Could not execute AzureActiveDirectory action: [AccountUpdateManager] for: [$($formObject.userPrincipalName)], error: error: $($ex.ErrorDetails)"
     }
-    Write-Information -Tags "Audit" -MessageData $auditLog
+    Write-Information -Tags 'Audit' -MessageData $auditLog
     Write-Error $auditLog.Message
 }
 ##################################################################
